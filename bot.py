@@ -55,26 +55,31 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size):
         # Execute the trade if there is a signal
         if signal is not None:
 
-            # Fetch open orders
-            orders = get_open_orders()
-            if len(orders) > 0:
-                logger.info(f"Cancelling orders since more than 1 orders pending: {len(orders)}")
-                # Cancel orders         
-                for order in orders:
-                    logger.info(f"Cancelling order: {order}")
-                    cancel_order(order)
+            # # Fetch open orders
+            # orders = get_open_orders()
+            # if len(orders) > 0:
+            #     logger.info(f"Cancelling orders since more than 1 orders pending: {len(orders)}")
+            #     # Cancel orders         
+            #     for order in orders:
+            #         logger.info(f"Cancelling order: {order}")
+            #         cancel_order(order)
 
             # Get the current market price
-            tick = mt5.symbol_info_tick(symbol)
-            price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
-            logger.info(f"tick point: {tick.point}, tick ask price: {tick.ask}, tick bid price: {tick.bid}")
+            tick = mt5.symbol_info_tick(symbol)            
+            symbol_info = mt5.symbol_info(symbol)
             # Set the stop loss and take profit levels
-            #stop_loss = price - 1000 * tick.point
-            #take_profit = price + 1000 * tick.point
-            stop_loss = tick.ask - 500 * tick.point
-            take_profit = tick.bid + 500 * tick.point
-            # stop_loss = price - 50
-            # take_profit = price + 100
+            # stop_loss = price - 1000 * symbol_info.point
+            # take_profit = price + 1000 * symbol_info.point
+            price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
+            SL_TP_MARGIN = 5000
+            if signal == mt5.ORDER_TYPE_BUY:
+                price = tick.bid
+                stop_loss = price - 2 * SL_TP_MARGIN * symbol_info.point
+                take_profit = price + SL_TP_MARGIN * symbol_info.point
+            else:
+                price = tick.ask 
+                stop_loss = price + 2 * SL_TP_MARGIN * symbol_info.point
+                take_profit = price - SL_TP_MARGIN * symbol_info.point            
 
             order_request = {
                 'action': mt5.TRADE_ACTION_DEAL,
@@ -91,7 +96,7 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size):
             logger.info(f"Sending order request: {order_request}")        
 
         # Wait for 1 minute before checking for another trading signal        
-        sleep(5)
+        sleep(60)
         logger.debug("Waiting for 5s prior to checking")
 
 def fetch_pending_orders():
@@ -103,6 +108,7 @@ if __name__ == "__main__":
     symbol = 'BTCUSDm'
     timeframe = mt5.TIMEFRAME_M1
     RSI_period = 14
+    #RSI_period = 5
     RSI_upper = 70
     RSI_lower = 30
     lot_size = 0.5
