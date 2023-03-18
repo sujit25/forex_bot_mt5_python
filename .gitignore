@@ -1,0 +1,3 @@
+config/*.json.bak
+logs
+__pycache__
