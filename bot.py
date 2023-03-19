@@ -29,7 +29,7 @@ logging.getLogger(__name__).addHandler(console)
 logger = logging.getLogger(__name__)
 
 
-def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size):
+def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_interval=60):
     """ 
     Trading bot entry point
     args:
@@ -74,12 +74,12 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size):
             SL_TP_MARGIN = 5000
             if signal == mt5.ORDER_TYPE_BUY:
                 price = tick.bid
-                stop_loss = price - 2 * SL_TP_MARGIN * symbol_info.point
-                take_profit = price + SL_TP_MARGIN * symbol_info.point
+                stop_loss = price - 0.5 * SL_TP_MARGIN * symbol_info.point
+                take_profit = price + 2 * SL_TP_MARGIN * symbol_info.point
             else:
                 price = tick.ask 
-                stop_loss = price + 2 * SL_TP_MARGIN * symbol_info.point
-                take_profit = price - SL_TP_MARGIN * symbol_info.point            
+                stop_loss = price + 0.5 * SL_TP_MARGIN * symbol_info.point
+                take_profit = price - 2 * SL_TP_MARGIN * symbol_info.point
 
             order_request = {
                 'action': mt5.TRADE_ACTION_DEAL,
@@ -95,9 +95,9 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size):
             send_order(order_request)
             logger.info(f"Sending order request: {order_request}")        
 
-        # Wait for 1 minute before checking for another trading signal        
-        sleep(60)
-        logger.debug("Waiting for 5s prior to checking")
+        # Wait for 1 minute before checking for another trading signal
+        sleep(sleep_interval)
+        logger.debug(f"Waiting for {sleep_interval}s prior to checking")
 
 def fetch_pending_orders():
     # fetch pending orders
@@ -107,11 +107,11 @@ def fetch_pending_orders():
 if __name__ == "__main__":
     symbol = 'BTCUSDm'
     timeframe = mt5.TIMEFRAME_M1
-    RSI_period = 14
-    #RSI_period = 5
+    RSI_period = 14    
     RSI_upper = 70
     RSI_lower = 30
     lot_size = 0.5
+    sleep_interval = 5
     config_data = read_config()
     init_status = initialize_mt5(config_data)
     if not init_status:
@@ -119,5 +119,5 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         logger.info("Initialization successful!!")
-    main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size)
+    main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_interval)
 
