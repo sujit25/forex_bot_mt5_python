@@ -1,5 +1,5 @@
 import MetaTrader5 as mt5
-from strategy import RSI_strategy
+from strategy import RSI_strategy, RSI_strategy_mean
 from utils import read_config
 from mt5_interface import initialize_mt5, send_order, get_open_orders, cancel_order
 from time import sleep
@@ -50,8 +50,11 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_in
     # Enter the main trading loop
     while True:
         # Check for a trading signal
-        prev_rsi_val, signal = RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
+        prev_rsi_val, signal = RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
 
+        # use RSI mean strategy to generate trading signal
+        #prev_rsi_val, signal = RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)        
+        logger.info(f"RSI value: {prev_rsi_val}")
         # Execute the trade if there is a signal
         if signal is not None:
 
@@ -70,17 +73,23 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_in
             # Set the stop loss and take profit levels
             # stop_loss = price - 1000 * symbol_info.point
             # take_profit = price + 1000 * symbol_info.point
-            price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
-            SL_TP_MARGIN = 5000
+            price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask            
+            SL_MARGIN = 50
+            TP_MARGIN = 25
             if signal == mt5.ORDER_TYPE_BUY:
                 price = tick.bid
-                stop_loss = price - 0.5 * SL_TP_MARGIN * symbol_info.point
-                take_profit = price + 2 * SL_TP_MARGIN * symbol_info.point
+                # Set stop loss to 25 points only
+                stop_loss = price - (SL_MARGIN * symbol_info.point)
+                # Set TP to 50 points 
+                take_profit = price + (TP_MARGIN * symbol_info.point)
             else:
                 price = tick.ask 
-                stop_loss = price + 0.5 * SL_TP_MARGIN * symbol_info.point
-                take_profit = price - 2 * SL_TP_MARGIN * symbol_info.point
+                # Set stop loss to 25 points only
+                stop_loss = price + (SL_MARGIN * symbol_info.point)
+                # Set TP to 50 points
+                take_profit = price - (TP_MARGIN * symbol_info.point)
 
+            logger.info(f"symbol point: {symbol_info.point}, price: {price}, take profit: {take_profit},stop loss: {stop_loss}")            
             order_request = {
                 'action': mt5.TRADE_ACTION_DEAL,
                 'symbol': symbol,
@@ -90,7 +99,9 @@ def main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_in
                 'sl': stop_loss,
                 'tp': take_profit,
                 'magic': 123456,
-                'comment': 'RSI Trading Bot'
+                'comment': 'RSI Trading Bot',
+                "type_time": mt5.ORDER_TIME_GTC, 
+                "type_filling": mt5.ORDER_FILLING_FOK, 
             }
             send_order(order_request)
             logger.info(f"Sending order request: {order_request}")        
@@ -105,7 +116,7 @@ def fetch_pending_orders():
     return [order[0] for order in orders]    
 
 if __name__ == "__main__":
-    symbol = 'BTCUSDm'
+    symbol = 'USDJPYm'
     timeframe = mt5.TIMEFRAME_M1
     RSI_period = 14    
     RSI_upper = 70
@@ -119,5 +130,9 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         logger.info("Initialization successful!!")
-    main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_interval)
+    try:
+        main(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, lot_size, sleep_interval)
+    except Exception as ex:
+        logger.error(f"Got Error while runnning bot: {ex}")
+        logger.error("Terminating bot!!!")
 

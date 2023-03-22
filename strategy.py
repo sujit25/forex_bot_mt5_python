@@ -32,10 +32,45 @@ def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_v
     rsi_val = RSI.values[-1]
     if prev_rsi_val is None:
         prev_rsi_val = rsi_val
+        return prev_rsi_val, None    
+    # Determine the trading signal based on the RSI value
+    if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
+        logger.info(f"Sending sell order since {rsi_val} < {RSI_upper}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_SELL
+    elif prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
+        logger.info(f"Sending buy order since {rsi_val} > {RSI_lower}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_BUY
+    else:
+        prev_rsi_val = rsi_val
         return prev_rsi_val, None
+    
+def RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None):
+    """ 
+    Compute mean RSI value and decide whether to buy/sell 
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        RSI_Period: RSI time frame
+        RSI_Upper: Rsi upper value
+        RSI_Lower: Rsi lower value
+        prev_rsi_val: Previous rsi value
+    """
 
-    logger.info(f"RSI value: {rsi_val}")
+    # Get the historical data for the symbol and timeframe    
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, RSI_period+1)
 
+    # Convert the rates to a pandas DataFrame
+    rates_frame = pd.DataFrame(rates)
+    
+    # Calculate the RSI indicator
+    RSI = ta.RSI(rates_frame['close'], timeperiod=RSI_period)        
+    # Compute mean RSI value
+    rsi_val = RSI.mean()
+    if prev_rsi_val is None:
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, None    
     # Determine the trading signal based on the RSI value
     if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
         logger.info(f"Sending sell order since {rsi_val} > {RSI_upper}")
@@ -48,8 +83,46 @@ def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_v
     else:
         prev_rsi_val = rsi_val
         return prev_rsi_val, None
-    
 
+def RSI_strategy_ema(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None, smoothing_period=5):
+    """ 
+    Compute ema RSI value and decide whether to buy/sell 
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        RSI_Period: RSI time frame
+        RSI_Upper: Rsi upper value
+        RSI_Lower: Rsi lower value
+        prev_rsi_val: Previous rsi value
+    """
+
+    # Get the historical data for the symbol and timeframe    
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, RSI_period+1)
+
+    # Convert the rates to a pandas DataFrame
+    rates_frame = pd.DataFrame(rates)
+    
+    # Calculate the RSI indicator
+    RSI = ta.RSI(rates_frame['close'], timeperiod=RSI_period).ewm(span=smoothing_period, adjust=False)
+
+    # Compute mean RSI value
+    rsi_val = RSI.mean()
+    if prev_rsi_val is None:
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, None    
+    # Determine the trading signal based on the RSI value
+    if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
+        logger.info(f"Sending sell order since current rsi val: {rsi_val} > {RSI_upper} and prev_rsi_val: {prev_rsi_val} < {RSI_Upper}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_SELL
+    elif prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
+        logger.info(f"Sending buy order since current rsi val: {rsi_val} > {RSI_lower} and prev_rsi_val: {prev_rsi_val} < {RSI_Lower}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_BUY
+    else:
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, None
+        
 # if __name__ == "__main__":    
 #     symbol = 'USDJPY'
 #     timeframe = mt5.TIMEFRAME_M1
