@@ -9,7 +9,7 @@ from time import sleep
 
 logger = logging.getLogger(__name__)
                                         
-def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val, ADX_THRESHOLD=35):
+def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val, ADX_THRESHOLD=25):
     """
     Compute ADX, RSI and DI indicator value and decide whether to buy/sell
     args:
@@ -23,48 +23,53 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
         prev_rsi_val: Updated rsi value
         signal: Buy/Sell signal if its generated or None
     """
-    print(f"symbol: {symbol}, timeframe: {timeframe}, RSI period: {RSI_period}")
     # Get the historical data for the symbol and timeframe    
-    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, RSI_period)
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
 
     # Convert the rates to a pandas DataFrame
     rates_frame = pd.DataFrame(rates)
-    print(f"Rates dataframe: {rates_frame}")
-    print(f"high values: {rates_frame['high']}, low values: {rates_frame['low']}, close: {rates_frame['close']}")
-    # Calculate the RSI indicator    
-    rsi_time_period = RSI_period + 1
-    adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=rsi_time_period)
-    minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=rsi_time_period)
-    plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=rsi_time_period)
-    RSI = ta.RSI(rates_frame['close'], timeperiod=rsi_time_period)
-    print(f"adx value: {adx_value}, minus_di_val: {minus_di_val}, plus_di_val: {plus_di_val}")
-    rsi_val = RSI.values.mean()
-    print(f"RSI value computed for adx strategy: {rsi_val}, rsi period: {RSI_period}, adx value: {adx_value}, minus di val: {minus_di_val}, plus di val: {plus_di_val}")
-    logger.info(f"RSI value computed for adx strategy: {rsi_val}")
-
+    #rates_frame.to_csv("usdjpy_rates_dataframe.csv", index=False)
+    # Calculate the RSI indicator            
+    index = -1 * RSI_period
+    # adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
+    # minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
+    # plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
+    adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
+    minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
+    plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
+    RSI = ta.RSI(rates_frame['close'][-1 *(RSI_period*2):], timeperiod=RSI_period)
+    rsi_val = RSI.values[-5:].mean()
+    #rsi_val = RSI.ewm(span=5, adjust=False).mean()
+    logger.info(f"RSI value computed for adx strategy- rsi period: {RSI_period}, adx value: {adx_value}, minus di val: {minus_di_val}, plus di val: {plus_di_val}")
+    
     # Initialize prev rsi value first time if its not initialized already
     if prev_rsi_val is None:
         prev_rsi_val = rsi_val
         return prev_rsi_val, None
     
     if adx_value > ADX_THRESHOLD and plus_di_val < minus_di_val:
-        logger.info("Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
+        logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
         # Check for buy condition using RSI
         if prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
             logger.info(f"Sending buy order since prev rsi val: {prev_rsi_val} < {RSI_lower} and current rsi val: {rsi_val} > {RSI_lower}")
             prev_rsi_val = rsi_val
             return prev_rsi_val, mt5.ORDER_TYPE_BUY
-        else:
+        else:            
+            logger.info(f"NOT Sending buy order since prev rsi val: {prev_rsi_val} !< {RSI_lower} OR current rsi val: {rsi_val} !> {RSI_lower}")
+            prev_rsi_val = rsi_val
             return prev_rsi_val, None
     elif adx_value > ADX_THRESHOLD and plus_di_val > minus_di_val:
-        logger.info("Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
+        logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
         # Check for sell condition using RSI
         if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
-            logger.info(f"Sending sell order since {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}")
+            logger.info(f"Sending sell order since {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}")            
             prev_rsi_val = rsi_val
             return prev_rsi_val, mt5.ORDER_TYPE_SELL
         else:
+            logger.info(f"NOT Sending sell order since {prev_rsi_val} !> {RSI_upper} OR current rsi val: {rsi_val} !< {RSI_upper}") 
+            prev_rsi_val = rsi_val
             return prev_rsi_val, None
+    prev_rsi_val = rsi_val
     return prev_rsi_val, None
 
 
@@ -185,7 +190,7 @@ def RSI_strategy_ema(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
         return prev_rsi_val, None
         
 if __name__ == "__main__":    
-    symbol = 'USDJPY'
+    symbol = 'USDJPYm'
     timeframe = mt5.TIMEFRAME_M1
     RSI_period = 14
     RSI_upper = 70
@@ -200,6 +205,6 @@ if __name__ == "__main__":
     # Continuously pull rates using mt5
     prev_rsi_val = None
     while True:        
-        prev_rsi_val, signal = RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None)
+        prev_rsi_val, signal = ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None)
         print(f"Prev rsi val: {prev_rsi_val}")
         sleep(5)

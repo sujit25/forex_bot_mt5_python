@@ -105,7 +105,7 @@ def main(strategy_name):
 if __name__ == "__main__":
     symbol = 'USDJPYm'
     strategy_name = "ADX_RSI_DI"
-    timeframe = mt5.TIMEFRAME_M5
+    timeframe = mt5.TIMEFRAME_M1
     config_data = read_config()
     init_status = initialize_mt5(config_data)
     if not init_status:
