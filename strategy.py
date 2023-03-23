@@ -9,7 +9,7 @@ from time import sleep
 
 logger = logging.getLogger(__name__)
                                         
-def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val, ADX_THRESHOLD=25):
+def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val, ADX_THRESHOLD=35):
     """
     Compute ADX, RSI and DI indicator value and decide whether to buy/sell
     args:
@@ -37,8 +37,9 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
     adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
     minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
     plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]
-    RSI = ta.RSI(rates_frame['close'][-1 *(RSI_period*2):], timeperiod=RSI_period)
-    rsi_val = RSI.values[-5:].mean()
+    RSI = ta.RSI(rates_frame['close'][-1 *(RSI_period*2):], timeperiod=RSI_period+1)
+    #rsi_val = RSI.values[-5:].mean()
+    rsi_val = RSI.values[-1]
     #rsi_val = RSI.ewm(span=5, adjust=False).mean()
     logger.info(f"RSI value computed for adx strategy- rsi period: {RSI_period}, adx value: {adx_value}, minus di val: {minus_di_val}, plus di val: {plus_di_val}")
     
@@ -47,30 +48,62 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
         prev_rsi_val = rsi_val
         return prev_rsi_val, None
     
-    if adx_value > ADX_THRESHOLD and plus_di_val < minus_di_val:
-        logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
-        # Check for buy condition using RSI
+    #ADX > 35 AND RSI < 50 AND +DI < -DI ==> BUY SIGNAL
+    #ADX > 35 AND RSI > 50 AND +DI > -DI ==> SELL SIGNAL
+    if adx_value > ADX_THRESHOLD:
+        # buy case 
+        # check RSI 
         if prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
-            logger.info(f"Sending buy order since prev rsi val: {prev_rsi_val} < {RSI_lower} and current rsi val: {rsi_val} > {RSI_lower}")
             prev_rsi_val = rsi_val
-            return prev_rsi_val, mt5.ORDER_TYPE_BUY
-        else:            
-            logger.info(f"NOT Sending buy order since prev rsi val: {prev_rsi_val} !< {RSI_lower} OR current rsi val: {rsi_val} !> {RSI_lower}")
+            logger.info(f"prev rsi val: {prev_rsi_val} < {RSI_lower} and current rsi val: {rsi_val} > {RSI_lower}..Checking for adx values")
+            # Check for di indicator values
+            if plus_di_val < minus_di_val:                
+                logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
+                logger.info("Sending buy order!!!")
+                return prev_rsi_val, mt5.ORDER_TYPE_BUY
+            else:
+                logger.info(f"plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}...Hence skipping order submission for buy case!!!")
+
+        # Sell case
+        # check RSI
+        elif prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
             prev_rsi_val = rsi_val
-            return prev_rsi_val, None
-    elif adx_value > ADX_THRESHOLD and plus_di_val > minus_di_val:
-        logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
-        # Check for sell condition using RSI
-        if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
-            logger.info(f"Sending sell order since {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}")            
-            prev_rsi_val = rsi_val
-            return prev_rsi_val, mt5.ORDER_TYPE_SELL
-        else:
-            logger.info(f"NOT Sending sell order since {prev_rsi_val} !> {RSI_upper} OR current rsi val: {rsi_val} !< {RSI_upper}") 
-            prev_rsi_val = rsi_val
-            return prev_rsi_val, None
-    prev_rsi_val = rsi_val
+            logger.info(f"Prev rsi value: {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}...Checking for adx values")
+            # Check for di indicator values
+            if plus_di_val > minus_di_val:                
+                logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
+                logger.info("Sending sell order!!!")
+                return prev_rsi_val, mt5.ORDER_TYPE_SELL
+            else:
+                logger.info(f"plus_di_val : {plus_di_val} < minus_di_val: {minus_di_val}...Hence skipping order submission for sell case!!!!")
+
+    prev_rsi_val = rsi_val        
     return prev_rsi_val, None
+
+    # if adx_value > ADX_THRESHOLD and plus_di_val < minus_di_val:
+    #     logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
+    #     # Check for buy condition using RSI
+    #     if prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
+    #         logger.info(f"Sending buy order since prev rsi val: {prev_rsi_val} < {RSI_lower} and current rsi val: {rsi_val} > {RSI_lower}")
+    #         prev_rsi_val = rsi_val
+    #         return prev_rsi_val, mt5.ORDER_TYPE_BUY
+    #     else:            
+    #         logger.info(f"NOT Sending buy order since prev rsi val: {prev_rsi_val} !< {RSI_lower} OR current rsi val: {rsi_val} !> {RSI_lower}")
+    #         prev_rsi_val = rsi_val
+    #         return prev_rsi_val, None
+    # elif adx_value > ADX_THRESHOLD and plus_di_val > minus_di_val:
+    #     logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
+    #     # Check for sell condition using RSI
+    #     if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
+    #         logger.info(f"Sending sell order since {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}")            
+    #         prev_rsi_val = rsi_val
+    #         return prev_rsi_val, mt5.ORDER_TYPE_SELL
+    #     else:
+    #         logger.info(f"NOT Sending sell order since {prev_rsi_val} !> {RSI_upper} OR current rsi val: {rsi_val} !< {RSI_upper}") 
+    #         prev_rsi_val = rsi_val
+    #         return prev_rsi_val, None
+    # prev_rsi_val = rsi_val
+    # return prev_rsi_val, None
 
 
 def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None):

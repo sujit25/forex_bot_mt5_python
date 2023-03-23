@@ -75,7 +75,7 @@ def adx_rsi_strategy(symbol, timeframe, RSI_period=14, RSI_upper=70, RSI_lower=3
     prev_rsi_val = None
     # Enter the main trading loop
     while True:
-        # Check for a trading signal        
+        # Check for a trading signal                                                
         prev_rsi_val, signal = ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
         #prev_rsi_val, signal = RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
 
@@ -104,7 +104,7 @@ def main(strategy_name):
 
 if __name__ == "__main__":
     symbol = 'USDJPYm'
-    strategy_name = "ADX_RSI_DI"
+    strategy_name = "ADX_RSI_DI"    
     timeframe = mt5.TIMEFRAME_M1
     config_data = read_config()
     init_status = initialize_mt5(config_data)
