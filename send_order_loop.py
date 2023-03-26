@@ -41,10 +41,9 @@ def send_order_loop_btc(symbol, lot_size):
     bid_price = tick.bid
 
     # Set the stop loss and take profit levels
-    # stop_loss = price - 10 * mt5.symbol_info(symbol).point
-    # take_profit = price + 10 * mt5.symbol_info(symbol).point
-    stop_loss = bid_price - 1000 * mt5.symbol_info(symbol).point
-    take_profit = ask_price + 1000 * mt5.symbol_info(symbol).point
+    # multiplication factor is 100 only for BTCUSDm or ETHUSD pairs
+    stop_loss = bid_price - 100 * mt5.symbol_info(symbol).point * 20
+    take_profit = ask_price + 100 * mt5.symbol_info(symbol).point * 50
     
     logger.info(f"Current price: {price}, Stop loss: {stop_loss}, take profit: {take_profit}")
     order_request = {
@@ -79,9 +78,12 @@ if __name__ == "__main__":
     else:
         logger.info("Initialization successful!!")
 
+    # Send 10 orders for current pair BTCUSDm 
+    limit = 10
     index = 0
-    while True:        
+    while True:
+        if index > limit:
+            break
+        index += 1 
         send_order_loop_btc(symbol, lot_size)
-        sleep(5)        
-
-
+        sleep(5)

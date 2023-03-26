@@ -77,8 +77,6 @@ def adx_rsi_strategy(symbol, timeframe, RSI_period=14, RSI_upper=70, RSI_lower=3
     while True:
         # Check for a trading signal                                                
         prev_rsi_val, signal = ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
-        #prev_rsi_val, signal = RSI_strategy_mean(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val)
-
         # use RSI mean strategy to generate trading signal       
         logger.info(f"RSI value: {prev_rsi_val}")
         # Execute the trade if there is a signal
@@ -156,7 +154,7 @@ def main(strategy_name):
         logger.error("Terminating bot!!!")
 
 if __name__ == "__main__":
-    symbol = 'ETHUSDm'
+    symbol = 'BTCUSDm'
     strategy_name = "AROON"
     timeframe = mt5.TIMEFRAME_M1
     config_data = read_config()

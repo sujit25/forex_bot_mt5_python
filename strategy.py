@@ -24,31 +24,30 @@ def Aroon_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window
         ar_down_val: Newly computed ar down val
         signal: Buy/sell or None if not crossover found
     """
-    print(f"Symbol: {symbol}, timeframe: {timeframe}, window size: {window_size}")
     rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
     rates_frame = pd.DataFrame(rates)
     #ar_down_vals, ar_up_vals = ta.AROON(rates_frame['high'], rates_frame['low'], timeperiod=25)
     ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame)
     
     ar_up_val = ar_up_vals.values[-1]
-    ar_down_val = ar_down_vals.values[-1]
-    print(f"ar up val: {ar_up_val}, ar_down val: {ar_down_val}")
+    ar_down_val = ar_down_vals.values[-1]    
     if ar_up_prev is None or ar_down_val is None:
         ar_up_prev = ar_up_val
         ar_down_prev = ar_down_val
         return ar_up_prev, ar_down_prev, None
     
     signal = None
-    print(f"ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
+    logger.info(f"ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
     # Check for cross over between prev ar values and current ar values
     # Bullish crossover
     if ar_up_prev < ar_down_prev and ar_up_val > ar_down_val:
         signal = mt5.ORDER_TYPE_BUY
-        print("Found bullish cross over!!!!")
+        logger.info("Found bullish cross over!!!!")
+
     # Bearish crossover
     elif ar_up_prev > ar_down_prev and ar_up_val < ar_down_val:
         signal = mt5.ORDER_TYPE_SELL
-        print("Found bearish cross over!!!!")
+        logger.info("Found bearish cross over!!!!")
     
     ar_up_prev = ar_up_val
     ar_down_prev = ar_down_val
@@ -136,8 +135,7 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
     # Convert the rates to a pandas DataFrame
     rates_frame = pd.DataFrame(rates)
     #rates_frame.to_csv("usdjpy_rates_dataframe.csv", index=False)
-    # Calculate the RSI indicator            
-    index = -1 * RSI_period
+    # Calculate the RSI indicator                
     # adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
     # minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
     # plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()

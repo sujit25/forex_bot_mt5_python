@@ -1,3 +1,4 @@
 config/*.json.bak
 logs
 __pycache__
+fetch_current_orders_info.py
