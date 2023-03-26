@@ -6,8 +6,55 @@ import sys
 from utils import read_config
 from mt5_interface import initialize_mt5
 from time import sleep
+import numpy as np
+from strategy_impl import compute_aroon_values
 
 logger = logging.getLogger(__name__)
+
+def Aroon_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window_size=25):
+    """ 
+    Compute buy/sell signal using Aaroon indicator
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        ar_up_prev: AR up value (previously computed)
+        ar_down_prev: AR down value (previously computed)
+    return:
+        ar_up_val: Newly computed ar up val
+        ar_down_val: Newly computed ar down val
+        signal: Buy/sell or None if not crossover found
+    """
+    print(f"Symbol: {symbol}, timeframe: {timeframe}, window size: {window_size}")
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
+    rates_frame = pd.DataFrame(rates)
+    #ar_down_vals, ar_up_vals = ta.AROON(rates_frame['high'], rates_frame['low'], timeperiod=25)
+    ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame)
+    
+    ar_up_val = ar_up_vals.values[-1]
+    ar_down_val = ar_down_vals.values[-1]
+    print(f"ar up val: {ar_up_val}, ar_down val: {ar_down_val}")
+    if ar_up_prev is None or ar_down_val is None:
+        ar_up_prev = ar_up_val
+        ar_down_prev = ar_down_val
+        return ar_up_prev, ar_down_prev, None
+    
+    signal = None
+    print(f"ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
+    # Check for cross over between prev ar values and current ar values
+    # Bullish crossover
+    if ar_up_prev < ar_down_prev and ar_up_val > ar_down_val:
+        signal = mt5.ORDER_TYPE_BUY
+        print("Found bullish cross over!!!!")
+    # Bearish crossover
+    elif ar_up_prev > ar_down_prev and ar_up_val < ar_down_val:
+        signal = mt5.ORDER_TYPE_SELL
+        print("Found bearish cross over!!!!")
+    
+    ar_up_prev = ar_up_val
+    ar_down_prev = ar_down_val
+    return ar_up_prev, ar_down_prev, signal
+
+
 
 def DXI_strategy(symbol, timeframe, prev_pos_di_val, prev_neg_di_val, RSI_period=5, ADX_THRESHOLD=25):
     """
@@ -139,31 +186,6 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
 
     prev_rsi_val = rsi_val        
     return prev_rsi_val, None
-
-    # if adx_value > ADX_THRESHOLD and plus_di_val < minus_di_val:
-    #     logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} < minus_di_val: {minus_di_val}")
-    #     # Check for buy condition using RSI
-    #     if prev_rsi_val < RSI_lower and rsi_val > RSI_lower:
-    #         logger.info(f"Sending buy order since prev rsi val: {prev_rsi_val} < {RSI_lower} and current rsi val: {rsi_val} > {RSI_lower}")
-    #         prev_rsi_val = rsi_val
-    #         return prev_rsi_val, mt5.ORDER_TYPE_BUY
-    #     else:            
-    #         logger.info(f"NOT Sending buy order since prev rsi val: {prev_rsi_val} !< {RSI_lower} OR current rsi val: {rsi_val} !> {RSI_lower}")
-    #         prev_rsi_val = rsi_val
-    #         return prev_rsi_val, None
-    # elif adx_value > ADX_THRESHOLD and plus_di_val > minus_di_val:
-    #     logger.info(f"Adx value: {adx_value} > Adx threshold: {ADX_THRESHOLD} & plus_di_val: {plus_di_val} > minus_di_val: {minus_di_val}")
-    #     # Check for sell condition using RSI
-    #     if prev_rsi_val > RSI_upper and rsi_val < RSI_upper:
-    #         logger.info(f"Sending sell order since {prev_rsi_val} > {RSI_upper} and current rsi val: {rsi_val} < {RSI_upper}")            
-    #         prev_rsi_val = rsi_val
-    #         return prev_rsi_val, mt5.ORDER_TYPE_SELL
-    #     else:
-    #         logger.info(f"NOT Sending sell order since {prev_rsi_val} !> {RSI_upper} OR current rsi val: {rsi_val} !< {RSI_upper}") 
-    #         prev_rsi_val = rsi_val
-    #         return prev_rsi_val, None
-    # prev_rsi_val = rsi_val
-    # return prev_rsi_val, None
 
 
 def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None):

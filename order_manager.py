@@ -73,15 +73,15 @@ def place_order(symbol, signal, lot_size, SL_MARGIN=50, TP_MARGIN=25, comment='R
         if signal == mt5.ORDER_TYPE_BUY:
             price = tick.bid
             # Set stop loss to 25 points only
-            stop_loss = price - (SL_MARGIN * symbol_info.point)
+            stop_loss = price - (SL_MARGIN * symbol_info.point) * (10 ** 2)
             # Set TP to 50 points 
-            take_profit = price + (TP_MARGIN * symbol_info.point)
+            take_profit = price + (TP_MARGIN * symbol_info.point) * (10 ** 2)
         else:
             price = tick.ask 
             # Set stop loss to 25 points only
-            stop_loss = price + (SL_MARGIN * symbol_info.point)
+            stop_loss = price + (SL_MARGIN * symbol_info.point) * (10 ** 2)
             # Set TP to 50 points
-            take_profit = price - (TP_MARGIN * symbol_info.point)
+            take_profit = price - (TP_MARGIN * symbol_info.point) * (10 ** 2)
 
         logger.info(f"symbol point: {symbol_info.point}, price: {price}, take profit: {take_profit},stop loss: {stop_loss}")            
         order_request = {

@@ -1,5 +1,5 @@
 import MetaTrader5 as mt5
-from strategy import RSI_strategy_mean, ADX_RSI_strategy, DXI_strategy
+from strategy import RSI_strategy_mean, ADX_RSI_strategy, DXI_strategy, Aroon_strategy
 from utils import read_config
 from mt5_interface import initialize_mt5
 from order_manager import place_order, cancel_orders, place_order_without_sltp
@@ -114,6 +114,28 @@ def dxi_strategy(symbol, timeframe, lot_size=0.5, sleep_interval=5):
         logger.debug(f"Waiting for {sleep_interval}s prior to checking again!!")
 
 
+def aroon_strategy(symbol, timeframe, lot_size=0.5, sleep_interval=5):
+    """
+    DXI Strategy
+    args:
+        symbol: Symbol under consideration
+        timeframe: Timeframe for candlesticks
+        lot_size: Lot size for order
+        sleep_interval: No. of seconds to wait before re-checking for any possible signal possibility
+    """
+    prev_ar_up_val = None
+    prev_ar_down_val = None
+    
+    while True:
+        prev_ar_up_val, prev_ar_down_val, signal = Aroon_strategy(symbol, timeframe, prev_ar_up_val, prev_ar_down_val)
+        if signal is not None:            
+            logger.info(f"Found crossover for AR up val and AR down val!!. executing signal: {signal}")
+            place_order(symbol, signal, lot_size, SL_MARGIN=20, TP_MARGIN=50, comment='AR trading bot')
+        
+        # Wait for sleep interval before checking again to generate trading signal
+        sleep(sleep_interval)
+        logger.debug(f"Waiting for {sleep_interval}s prior to checking again!!")
+
 def main(strategy_name):
     try:    
         if strategy_name == 'RSI':
@@ -125,15 +147,17 @@ def main(strategy_name):
         elif strategy_name == 'DXI':
             logger.info(f"Running DXI trading strategy for symbol: {symbol}, timeframe: {timeframe}")
             dxi_strategy(symbol, timeframe)
+        elif strategy_name == "AROON":
+            logger.info(f"Running Aroon strategy for symbol: {symbol}, timeframe: {timeframe}")
+            aroon_strategy(symbol, timeframe)
     except Exception as ex:
         logger.error(f"Got Error while runnning bot: {ex}")
         logger.error(ex, exc_info=True)
         logger.error("Terminating bot!!!")
 
 if __name__ == "__main__":
-    symbol = 'USDJPYm'
-    #strategy_name = "ADX_RSI_DI"
-    strategy_name = "DXI"
+    symbol = 'ETHUSDm'
+    strategy_name = "AROON"
     timeframe = mt5.TIMEFRAME_M1
     config_data = read_config()
     init_status = initialize_mt5(config_data)
