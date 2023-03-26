@@ -55,7 +55,7 @@ def send_order_loop_btc(symbol, lot_size):
         'sl': stop_loss,
         'tp': take_profit,
         'magic': 123456,
-        'comment': 'RSI Trading Bot',
+        'comment': f'Trading_Bot_{symbol}',
         "type_time": mt5.ORDER_TIME_GTC, 
         "type_filling": mt5.ORDER_FILLING_FOK, 
     }  
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     RSI_lower = 30
     lot_size = 0.01
     config_data = read_config()
-    init_status = initialize_mt5(config_data)
+    init_status = initialize_mt5(config_data['credentials'])
     if not init_status:
         logger.error("Initialization failed!!!")
         sys.exit(0)
@@ -79,11 +79,11 @@ if __name__ == "__main__":
         logger.info("Initialization successful!!")
 
     # Send 10 orders for current pair BTCUSDm 
-    limit = 10
+    limit = 50
     index = 0
     while True:
         if index > limit:
             break
         index += 1 
         send_order_loop_btc(symbol, lot_size)
-        sleep(5)
+        #sleep(5)

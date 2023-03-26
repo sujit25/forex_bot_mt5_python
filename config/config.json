@@ -1,6 +1,38 @@
 {
-    "login": 78864257,
-    "password":"mp20KK0434",
-    "server": "Exness-MT5Trial7",
-    "mt5_exe_path": "C://Program Files//MetaTrader 5 EXNESS//terminal64.exe"
+    "credentials":{
+        "login": 78864257,
+        "password":"mp20KK0434",
+        "server": "Exness-MT5Trial7",
+        "mt5_exe_path": "C://Program Files//MetaTrader 5 EXNESS//terminal64.exe"
+    },
+    "trade_params":{
+        "symbol": "ETHUSDm",
+        "lot_size": 0.5,
+        "stop_loss_pips_margin": 20,
+        "take_profit_pips_margin": 50,
+        "timeframe": "1min",
+        "strategy": "AROON_CUSTOM_ENTRY_EXIT",
+        "sleep_interval": 5
+    },
+    "strategy_params":{
+        "AROON_CUSTOM_ENTRY_EXIT":{
+            "up_line_buy_lower_thresh": 30,
+            "up_line_buy_upper_thresh": 50,
+            "up_line_exit_thresh": 70,
+            "down_line_sell_upper_thresh": 70,
+            "down_line_sell_lower_thresh": 50,
+            "down_line_exit_thresh": 30
+        },
+        "RSI":{
+            "rsi_lower_thresh": 30,
+            "rsi_upper_thresh": 70,
+            "rsi_period": 14
+        },
+        "ADX_RSI_DI":{
+            "adx_thresh": 25,
+            "rsi_lower_thresh": 30,
+            "rsi_upper_thresh": 70,
+            "rsi_period": 14
+        }
+    }
 }

@@ -4,12 +4,98 @@ import talib as ta
 import logging
 import sys
 from utils import read_config
-from mt5_interface import initialize_mt5
+from mt5_interface import initialize_mt5, get_open_positions, cancel_orders
 from time import sleep
-import numpy as np
 from strategy_impl import compute_aroon_values
 
 logger = logging.getLogger(__name__)
+
+def Aroon_strategy_custom_threshold_close_orders(symbol, window_size=25, up_line_buy_exit_thresh=70, down_line_sell_exit_thresh=30):
+    """
+    Close existing orders opened by Aroon strategy 
+    args:
+        symbol: Symbol under consideration
+        up_line_buy_exit_thresh: Threshold limit to be considered for performing exit when buy order is executed between up_line_buy_lower_thresh and up_line_buy_upper_thresh
+        down_line_exit_thresh: Down line threshold to be considered for performing exit when sell order is executed between down_line_sell_upper_thresh and down_line_sell_lower_thresh
+    return:
+        None
+    """
+    open_positions = get_open_positions(symbol)
+    if len(open_positions) > 0:
+        rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
+        rates_frame = pd.DataFrame(rates)
+        ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame, window_size)
+        
+        # Take last values 
+        ar_up_val = ar_up_vals.values[-1]
+        ar_down_val = ar_down_vals.values[-1]
+
+        buy_open_positions = list(filter(lambda x: x[2] ==0, open_positions))        
+
+        # Check if ar_up_val has crossed buy exit threshold
+        if ar_up_val >= up_line_buy_exit_thresh:            
+            # Close buy open positions
+            positions_to_cancel = [(open_position[0], open_position[1]) for open_position in buy_open_positions]            
+            cancel_orders(positions_to_cancel)
+
+        sell_open_positions = list(filter(lambda x: x[2] ==1, open_positions))
+        # Check if ar_down_val has crossed sell exit threshold
+        if ar_down_val <= down_line_sell_exit_thresh:
+            # Close sell open positions
+            positions_to_cancel= [(open_position[0], open_position[1]) for open_position in sell_open_positions]                
+            cancel_orders(positions_to_cancel)
+
+def Aroon_custom_threshold_based_exit_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window_size=25, \
+                                                up_line_buy_lower_thresh=30, up_line_buy_upper_thresh=50, 
+                                                down_line_sell_upper_thresh=70, down_line_sell_lower_thresh=50):
+    """ 
+    Compute buy/sell signal using Aaroon indicator
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        ar_up_prev: AR up value (previously computed)
+        ar_down_prev: AR down value (previously computed)
+        up_line_buy_lower_thresh: Up line buy lower threshold to be considered for cross over during buy operation
+        up_line_buy_upper_thresh: Up line buy upper threshold to be considered for cross over during buy operation        
+        down_line_sell_upper_thresh: Down line sell upper threshold to be considered for cross over during sell operation
+        down_line_sell_lower_thresh: Down line sell lower threshold to be considered for cross over during sell operation        
+    return:
+        ar_up_val: Newly computed ar up val
+        ar_down_val: Newly computed ar down val
+        signal: Buy/sell or None if not crossover found
+    """
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
+    rates_frame = pd.DataFrame(rates)
+    ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame, window_size)
+    
+    ar_up_val = ar_up_vals.values[-1]
+    ar_down_val = ar_down_vals.values[-1]
+    if ar_up_prev is None or ar_down_val is None:
+        ar_up_prev = ar_up_val
+        ar_down_prev = ar_down_val
+        return ar_up_prev, ar_down_prev, None
+    print(f"AR up val: {ar_up_val}, AR down val: {ar_down_val}")
+    signal = None
+    # if AR UP is betwen 30 and 50
+    if ar_up_prev >= up_line_buy_lower_thresh and ar_up_prev <= up_line_buy_upper_thresh:
+        logger.info(f"ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
+        # Check for cross over between prev ar values and current ar values
+        # Bullish crossover
+        if ar_up_prev < ar_down_prev and ar_up_val > ar_down_val:
+            signal = mt5.ORDER_TYPE_BUY
+            logger.info("Found bullish cross over!!!!")
+
+    # if AR DOWN is between 50 and 70
+    if ar_down_prev >= down_line_sell_lower_thresh and ar_down_prev <= down_line_sell_upper_thresh:
+        # Bearish crossover
+        if ar_up_prev > ar_down_prev and ar_up_val < ar_down_val:
+            signal = mt5.ORDER_TYPE_SELL
+            logger.info("Found bearish cross over!!!!")
+    
+    # Copy back current values to prev values
+    ar_up_prev = ar_up_val
+    ar_down_prev = ar_down_val
+    return ar_up_prev, ar_down_prev, signal
 
 def Aroon_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window_size=25):
     """ 
@@ -26,8 +112,7 @@ def Aroon_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window
     """
     rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
     rates_frame = pd.DataFrame(rates)
-    #ar_down_vals, ar_up_vals = ta.AROON(rates_frame['high'], rates_frame['low'], timeperiod=25)
-    ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame)
+    ar_down_vals, ar_up_vals = compute_aroon_values(rates_frame, window_size)
     
     ar_up_val = ar_up_vals.values[-1]
     ar_down_val = ar_down_vals.values[-1]    
@@ -52,7 +137,6 @@ def Aroon_strategy(symbol, timeframe, ar_up_prev=None, ar_down_prev=None, window
     ar_up_prev = ar_up_val
     ar_down_prev = ar_down_val
     return ar_up_prev, ar_down_prev, signal
-
 
 
 def DXI_strategy(symbol, timeframe, prev_pos_di_val, prev_neg_di_val, RSI_period=5, ADX_THRESHOLD=25):

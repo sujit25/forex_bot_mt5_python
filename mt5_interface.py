@@ -31,23 +31,35 @@ def send_order(request):
     # Print the result of the trade
     logger.info(f"Send order result: {str(result)}")
 
-
-# Function to cancel an order
-def cancel_order(order_number):
-    # Create the request
-    request = {
-        "action": mt5.TRADE_ACTION_REMOVE,
-        "order": order_number,
-        "comment": "Order Removed"
-    }
-    # Send order to MT5
-    order_result = mt5.order_send(request)
-    return order_result
-
-def get_open_orders():
-    """ Fetch open orders"""
-    orders = mt5.orders_get()
-    order_array = []
+def cancel_orders(orders):
+    """ 
+    Cancel orders in bulk
+    args:
+        orders: Orders to be cancelled
+    return: None
+    """
     for order in orders:
-        order_array.append(order[0])
-    return order_array
+        order_ticket_id, symbol = order        
+        cancel_order(symbol, order_ticket_id)
+
+def cancel_order(symbol, order_number):
+    """ 
+    Cancel order
+    args: 
+        symbol: Symbol for which order needs to be closed
+        order_number: Order number for which order needs to be closed
+    returns: None
+    """
+    logger.info(f"Cancelling order with ticket id: {order_number} for symbol: {symbol}")
+    mt5.Close(symbol, ticket=order_number)
+
+def get_open_positions(symbol):
+    """ 
+    Fetch open orders for current symbol under consideration 
+    args:
+        symbol: Current symbol currently being traded
+    returns:
+        list: List of tuples including pair in format of symbol, order ticket id
+    """
+    orders = mt5.positions_get(symbol=symbol)
+    return [(order.symbol, order.ticket, order.type) for order in orders]

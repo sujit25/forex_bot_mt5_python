@@ -1,6 +1,6 @@
 import logging
 import MetaTrader5 as mt5
-from mt5_interface import send_order, cancel_order, get_open_orders
+from mt5_interface import send_order
 logger = logging.getLogger(__name__)
 
 def fetch_pending_orders():
@@ -10,15 +10,6 @@ def fetch_pending_orders():
     orders = mt5.orders_get()
     return [order[0] for order in orders] 
 
-def cancel_orders():
-    """ Cancel all open orders"""
-    # Fetch open orders
-    orders = get_open_orders()    
-    logger.info(f"Cancelling orders since more than 1 orders pending: {len(orders)}")
-    # Cancel orders
-    for order in orders:
-        logger.info(f"Cancelling order: {order}")
-        cancel_order(order)
 
 def place_order_without_sltp(symbol, signal, lot_size, comment='RSI Trading bot'):
     """
