@@ -35,7 +35,7 @@ def send_order_loop_btc(symbol, lot_size):
     signal = mt5.ORDER_TYPE_BUY
     tick = mt5.symbol_info_tick(symbol)
     print(tick)
-    #price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask    
+    # price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
     price = tick.ask if signal == mt5.ORDER_TYPE_BUY else tick.bid
     ask_price = tick.ask
     bid_price = tick.bid
