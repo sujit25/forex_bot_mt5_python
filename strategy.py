@@ -8,7 +8,67 @@ from mt5_interface import initialize_mt5
 from time import sleep
 
 logger = logging.getLogger(__name__)
-                                        
+
+def DXI_strategy(symbol, timeframe, prev_pos_di_val, prev_neg_di_val, RSI_period=5, ADX_THRESHOLD=25):
+    """
+    Compute DI indicator value and decide buy or sell on crossover
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        prev_pos_di_val: Prev pos di value
+        prev_neg_di_val: Prev neg di value
+    return:
+        signal: Buy/Sell signal if its generated or None
+        curr_pos_di_val: Current positive di value
+        curr_neg_di_val: Current negative di value
+    """
+    # Get the historical data for the symbol and timeframe    
+    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, 100)
+
+    # Convert the rates to a pandas DataFrame
+    rates_frame = pd.DataFrame(rates)
+    adx_value = ta.ADX(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1]    
+    # Calculate the RSI indicator 
+    minus_di_val = int(ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1])
+    plus_di_val = int(ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-1])
+    # minus_di_val = ta.MINUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
+    # plus_di_val = ta.PLUS_DI(rates_frame['high'], rates_frame['low'], rates_frame['close'], timeperiod=RSI_period).values[-5:].mean()
+   
+    # If prev values are not set
+    if prev_pos_di_val is None or prev_neg_di_val is None:
+        prev_pos_di_val = plus_di_val
+        prev_neg_di_val = minus_di_val
+        return prev_pos_di_val, prev_neg_di_val, None
+
+    # if adx threshold is not met, dont do anything
+    if adx_value < ADX_THRESHOLD:
+        prev_pos_di_val = plus_di_val
+        prev_neg_di_val = minus_di_val
+        logger.info(f"adx value: {adx_value} is less than threshold: {ADX_THRESHOLD}..plus di val: {plus_di_val}, neg di val: {minus_di_val}")
+        return prev_pos_di_val, prev_neg_di_val, None
+
+    logger.debug(f"Adx value: {adx_value}, prev pos di val: {prev_pos_di_val}, prev neg di val: {prev_neg_di_val}, minus di val: {minus_di_val}, plus di val: {plus_di_val}")
+    # Check for crossover between positive di value and negative di value -- buy case.
+    order = None
+    if (prev_pos_di_val < prev_neg_di_val) and (plus_di_val > minus_di_val):
+        logger.info(f"---->Found crossover: prev pos di val: {prev_pos_di_val} < prev neg di val: {prev_neg_di_val}...plus di val: {plus_di_val} > minus di val: {minus_di_val}")
+        logger.info("Executing BUY order!!!")
+        order = mt5.ORDER_TYPE_BUY
+    else:
+        logger.debug(f"Didnt found crossover: prev pos di val: {prev_pos_di_val}  prev neg di val: {prev_neg_di_val}...plus di val: {plus_di_val} > minus di val: {minus_di_val}")
+    # Check for crossover between pos di val > neg di value -- sell case.
+    if (prev_pos_di_val > prev_neg_di_val) and (plus_di_val < minus_di_val):
+        logger.info(f"----->Found crossover: prev pos di val: {prev_pos_di_val} > prev neg di val: {prev_neg_di_val}...plus di val: {plus_di_val} < minus di val: {minus_di_val}")
+        logger.info("Executing SELL order!!!")
+        order = mt5.ORDER_TYPE_SELL
+    else:
+        logger.debug(f"Didnt found crossover: prev pos di val: {prev_pos_di_val} < prev neg di val: {prev_neg_di_val}...plus di val: {plus_di_val} > minus di val: {minus_di_val}")        
+
+    # Update values for pos di val and minus di val.
+    prev_pos_di_val = plus_di_val
+    prev_neg_di_val = minus_di_val
+    return prev_pos_di_val, prev_neg_di_val, order
+    
 def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val, ADX_THRESHOLD=35):
     """
     Compute ADX, RSI and DI indicator value and decide whether to buy/sell
