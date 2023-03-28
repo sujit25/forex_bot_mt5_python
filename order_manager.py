@@ -60,7 +60,7 @@ def place_order(symbol, signal, lot_size, SL_MARGIN=50, TP_MARGIN=25, comment='R
 
         # Set the stop loss and take profit levels        
         price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
-        multiplier = 10 ** 2
+        multiplier = 10 ** 2 if symbol in ['BTCUSDm', 'ETHUSDm'] else 1
 
         if signal == mt5.ORDER_TYPE_BUY:
             price = tick.bid

@@ -175,13 +175,14 @@ def aroon_strategy_with_custom_threshold(trade_params, timeframe):
 
     while True:
         # Check thresholds and close orders
-        Aroon_strategy_custom_threshold_close_orders(symbol, timeframe)
+        Aroon_strategy_custom_threshold_close_orders(symbol=symbol, timeframe=timeframe)
 
         # Place orders using Aroon strategy
         prev_ar_up_val, prev_ar_down_val, signal = Aroon_custom_threshold_based_exit_strategy(symbol, timeframe, prev_ar_up_val, prev_ar_down_val)
         if signal is not None:            
             logger.info(f"Found crossover for AR up val and AR down val!!. executing signal: {signal}")
-            place_order(symbol, signal, lot_size, SL_MARGIN=sl_margin, TP_MARGIN=tp_margin, comment='AR custom trading bot')
+            #place_order(symbol, signal, lot_size, SL_MARGIN=sl_margin, TP_MARGIN=tp_margin, comment='AR custom trading bot')
+            place_order_without_sltp(symbol, signal, lot_size, comment='AR custom trading bot')
         
         # Wait for sleep interval before checking again to generate trading signal
         sleep(sleep_interval)
@@ -214,7 +215,7 @@ def main(strategy_name, timeframe, trade_params, strategy_params):
             logger.info(f"Running Aroon strategy for symbol: {symbol}, timeframe: {timeframe}")
             aroon_strategy(trade_params, timeframe)
         elif strategy_name == "AROON_CUSTOM_ENTRY_EXIT":
-            logger.info(f"Running Arooon strategy for symbol: {symbol}, timeframe: {timeframe} with custom entry and exit thresholds")
+            logger.info(f"Running Arooon with custom thresholds strategy for symbol: {symbol}, timeframe: {timeframe} with custom entry and exit thresholds")
             aroon_strategy_with_custom_threshold(trade_params, timeframe)
     except Exception as ex:
         logger.error(f"Got Error while runnning bot: {ex}")
