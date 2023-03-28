@@ -12,7 +12,7 @@ import os
 os.makedirs("logs", exist_ok=True)
 curr_dt = datetime.now().strftime(f"%Y_%m_%d")
 logging.basicConfig(
-     filename=f'logs/rsi_trading_bot_{curr_dt}.log',
+     filename=f'logs/trading_bot_{curr_dt}.log',
      level=logging.INFO, 
      format= '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s',
      datefmt='%H:%M:%S'
