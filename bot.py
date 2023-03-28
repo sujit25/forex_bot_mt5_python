@@ -8,6 +8,7 @@ import sys
 import logging
 from datetime import datetime
 import os
+import argparse
 
 os.makedirs("logs", exist_ok=True)
 curr_dt = datetime.now().strftime(f"%Y_%m_%d")
@@ -222,8 +223,12 @@ def main(strategy_name, timeframe, trade_params, strategy_params):
         logger.error(ex, exc_info=True)
         logger.error("Terminating bot!!!")
 
-if __name__ == "__main__":    
-    config_data = read_config()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='parse arguments')
+    parser.add_argument('config_file', help='Configuration file to be utilized for processing')
+    args = parser.parse_args()
+    print(f"Currently running trading bot using {args.config_file} configuration file")
+    config_data = read_config(args.config_file)    
     credentials, trade_params, strategy_params = parse_config(config_data)
     trade_timeframe = parse_trade_timeframe(trade_params['timeframe'])
     init_status = initialize_mt5(config_data['credentials'])

@@ -1,9 +1,9 @@
 import json
 import MetaTrader5 as mt5
 
-def read_config():
+def read_config(config_fpath):
     """ Parse json configuration file """
-    with open("config/config.json", 'r') as f:
+    with open(config_fpath, 'r') as f:
         config_data = json.load(f)
         return config_data
 

@@ -78,23 +78,23 @@ def Aroon_custom_threshold_based_exit_strategy(symbol, timeframe, ar_up_prev=Non
         ar_up_prev = ar_up_val
         ar_down_prev = ar_down_val
         return ar_up_prev, ar_down_prev, None
-    print(f"AR up val: {ar_up_val}, AR down val: {ar_down_val}")
+    print(f"symbol: {symbol}, AR up val: {ar_up_val}, AR down val: {ar_down_val}")
     signal = None
     # if AR UP is betwen 30 and 50
     if ar_up_prev >= up_line_buy_lower_thresh and ar_up_prev <= up_line_buy_upper_thresh:
-        logger.info(f"ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
+        logger.info(f"symbol: {symbol}, ar up prev: {ar_up_prev}, ar down prev: {ar_down_prev}, ar_up_val: {ar_up_val}, ar_down_val: {ar_down_val}")
         # Check for cross over between prev ar values and current ar values
         # Bullish crossover
         if ar_up_prev < ar_down_prev and ar_up_val > ar_down_val:
             signal = mt5.ORDER_TYPE_BUY
-            logger.info("Found bullish cross over!!!!")
+            logger.info(f"for symbol: {symbol} Found bullish cross over!!!!")
 
     # if AR DOWN is between 50 and 70
     if ar_down_prev >= down_line_sell_lower_thresh and ar_down_prev <= down_line_sell_upper_thresh:
         # Bearish crossover
         if ar_up_prev > ar_down_prev and ar_up_val < ar_down_val:
             signal = mt5.ORDER_TYPE_SELL
-            logger.info("Found bearish cross over!!!!")
+            logger.info(f"for symbol: {symbol} Found bearish cross over!!!!")
     
     # Copy back current values to prev values
     ar_up_prev = ar_up_val
