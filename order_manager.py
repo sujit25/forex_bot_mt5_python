@@ -1,6 +1,6 @@
 import logging
 import MetaTrader5 as mt5
-from mt5_interface import send_order, cancel_order, get_open_orders
+from mt5_interface import send_order
 logger = logging.getLogger(__name__)
 
 def fetch_pending_orders():
@@ -10,15 +10,6 @@ def fetch_pending_orders():
     orders = mt5.orders_get()
     return [order[0] for order in orders] 
 
-def cancel_orders():
-    """ Cancel all open orders"""
-    # Fetch open orders
-    orders = get_open_orders()    
-    logger.info(f"Cancelling orders since more than 1 orders pending: {len(orders)}")
-    # Cancel orders
-    for order in orders:
-        logger.info(f"Cancelling order: {order}")
-        cancel_order(order)
 
 def place_order_without_sltp(symbol, signal, lot_size, comment='RSI Trading bot'):
     """
@@ -66,24 +57,25 @@ def place_order(symbol, signal, lot_size, SL_MARGIN=50, TP_MARGIN=25, comment='R
         # Get the current market price
         tick = mt5.symbol_info_tick(symbol)            
         symbol_info = mt5.symbol_info(symbol)
-        # Set the stop loss and take profit levels
-        # stop_loss = price - 1000 * symbol_info.point
-        # take_profit = price + 1000 * symbol_info.point
-        price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask        
+
+        # Set the stop loss and take profit levels        
+        price = tick.bid if signal == mt5.ORDER_TYPE_BUY else tick.ask
+        multiplier = 10 ** 2 if symbol in ['BTCUSDm', 'ETHUSDm'] else 1
+
         if signal == mt5.ORDER_TYPE_BUY:
             price = tick.bid
-            # Set stop loss to 25 points only
-            stop_loss = price - (SL_MARGIN * symbol_info.point)
-            # Set TP to 50 points 
-            take_profit = price + (TP_MARGIN * symbol_info.point)
+            # Set stop loss to SL points from current price
+            stop_loss = price - (SL_MARGIN * symbol_info.point) * multiplier
+            # Set take profit to TP points from current price
+            take_profit = price + (TP_MARGIN * symbol_info.point) * multiplier
         else:
             price = tick.ask 
-            # Set stop loss to 25 points only
-            stop_loss = price + (SL_MARGIN * symbol_info.point)
-            # Set TP to 50 points
-            take_profit = price - (TP_MARGIN * symbol_info.point)
+            # Set stop loss to SL points from current price
+            stop_loss = price + (SL_MARGIN * symbol_info.point) * multiplier
+            # Set take profit to TP points from current price
+            take_profit = price - (TP_MARGIN * symbol_info.point) * multiplier
 
-        logger.info(f"symbol point: {symbol_info.point}, price: {price}, take profit: {take_profit},stop loss: {stop_loss}")            
+        logger.info(f"symbol point: {symbol_info.point}, price: {price}, take profit: {take_profit},stop loss: {stop_loss}")
         order_request = {
             'action': mt5.TRADE_ACTION_DEAL,
             'symbol': symbol,

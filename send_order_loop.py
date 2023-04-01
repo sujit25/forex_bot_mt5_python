@@ -41,10 +41,9 @@ def send_order_loop_btc(symbol, lot_size):
     bid_price = tick.bid
 
     # Set the stop loss and take profit levels
-    # stop_loss = price - 10 * mt5.symbol_info(symbol).point
-    # take_profit = price + 10 * mt5.symbol_info(symbol).point
-    stop_loss = bid_price - 1000 * mt5.symbol_info(symbol).point
-    take_profit = ask_price + 1000 * mt5.symbol_info(symbol).point
+    # multiplication factor is 100 only for BTCUSDm or ETHUSD pairs
+    stop_loss = bid_price - 100 * mt5.symbol_info(symbol).point * 20
+    take_profit = ask_price + 100 * mt5.symbol_info(symbol).point * 50
     
     logger.info(f"Current price: {price}, Stop loss: {stop_loss}, take profit: {take_profit}")
     order_request = {
@@ -56,7 +55,7 @@ def send_order_loop_btc(symbol, lot_size):
         'sl': stop_loss,
         'tp': take_profit,
         'magic': 123456,
-        'comment': 'RSI Trading Bot',
+        'comment': f'Trading_Bot_{symbol}',
         "type_time": mt5.ORDER_TIME_GTC, 
         "type_filling": mt5.ORDER_FILLING_FOK, 
     }  
@@ -72,16 +71,19 @@ if __name__ == "__main__":
     RSI_lower = 30
     lot_size = 0.01
     config_data = read_config()
-    init_status = initialize_mt5(config_data)
+    init_status = initialize_mt5(config_data['credentials'])
     if not init_status:
         logger.error("Initialization failed!!!")
         sys.exit(0)
     else:
         logger.info("Initialization successful!!")
 
+    # Send 10 orders for current pair BTCUSDm 
+    limit = 50
     index = 0
-    while True:        
+    while True:
+        if index > limit:
+            break
+        index += 1 
         send_order_loop_btc(symbol, lot_size)
-        sleep(5)        
-
-
+        #sleep(5)
