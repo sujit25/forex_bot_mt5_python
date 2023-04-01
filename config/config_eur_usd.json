@@ -6,7 +6,7 @@
         "mt5_exe_path": "C://Program Files//MetaTrader 5 EXNESS//terminal64.exe"
     },
     "trade_params":{
-        "symbol": "USDJPYm",
+        "symbol": "EURUSDm",
         "lot_size": 0.5,
         "stop_loss_pips_margin": 20,
         "take_profit_pips_margin": 50,
