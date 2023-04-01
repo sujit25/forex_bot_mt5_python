@@ -9,7 +9,7 @@
         "symbol": "USDJPYm",
         "lot_size": 0.5,
         "stop_loss_pips_margin": 20,
-        "take_profit_pips_margin": 50,
+        "take_profit_pips_margin": 40,
         "timeframe": "1min",
         "strategy": "AROON_CUSTOM_ENTRY_EXIT",
         "sleep_interval": 5
