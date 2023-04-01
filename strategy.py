@@ -31,11 +31,12 @@ def Aroon_strategy_custom_threshold_close_orders(symbol, timeframe, window_size=
         ar_up_val = ar_up_vals.values[-1]
         ar_down_val = ar_down_vals.values[-1]
 
-        buy_open_positions = list(filter(lambda x: x[2] ==0, open_positions))        
-        logger.info(f"Buy open positions: {buy_open_positions}")
+        buy_open_positions = list(filter(lambda x: x[2] ==0, open_positions))
+        logger.info(f"AR up value: {ar_up_val}, up line buy exit threshold: {up_line_buy_exit_thresh}, AR down value: {ar_down_val}, down_line_sell_exit_threshold: {down_line_sell_exit_thresh}")
 
         # Check if ar_up_val has crossed buy exit threshold
         if ar_up_val >= up_line_buy_exit_thresh:            
+            logger.info(f"Buy open positions: {buy_open_positions}")
             # Close buy open positions
             positions_to_cancel = [(open_position[0], open_position[1]) for open_position in buy_open_positions]
             logger.info(f"AR up value: {ar_up_val} crossed up line buy exit threshold: {up_line_buy_exit_thresh}. Closing positions: {positions_to_cancel}")
