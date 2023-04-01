@@ -6,7 +6,7 @@ import sys
 from utils import read_config
 from mt5_interface import initialize_mt5, get_open_positions, cancel_orders
 from time import sleep
-from strategy_impl import compute_aroon_values
+from indicator_impl import compute_aroon_values, compute_rsi_value
 
 logger = logging.getLogger(__name__)
 
@@ -276,6 +276,78 @@ def ADX_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_r
     prev_rsi_val = rsi_val        
     return prev_rsi_val, None
 
+def Inverse_rsi_close_orders(symbol, timeframe, rsi_period, rsi_upper, rsi_lower):
+    """
+    Close existing orders opened by Aroon strategy 
+    args:
+        symbol: Symbol under consideration
+        timeframe: timeframe for
+        rsi_period: RSI period
+        rsi_upper: Rsi upper threshold
+        rsi_lower: Rsi lower threshold
+    return:
+        None
+    """
+    open_positions = get_open_positions(symbol)
+    if len(open_positions) > 0:
+        logger.info(f"Got {len(open_positions)} open positions including buy and sell orders!!!")
+        
+        rsi_val = compute_rsi_value(symbol, timeframe, rsi_period)
+        
+        buy_open_positions = list(filter(lambda x: x[2] ==0, open_positions))        
+        logger.info(f"Buy open positions: {buy_open_positions}")
+
+        # Check if ar_up_val has crossed buy exit threshold
+        if rsi_val < rsi_upper:
+            # Close buy open positions
+            positions_to_cancel = [(open_position[0], open_position[1]) for open_position in buy_open_positions]
+            logger.info(f"Cancelling BUY positions using inverse rsi strategy!!! : {positions_to_cancel}")
+            cancel_orders(positions_to_cancel)
+
+        sell_open_positions = list(filter(lambda x: x[2] ==1, open_positions))
+        # Check if ar_down_val has crossed sell exit threshold
+        if rsi_val > rsi_lower:
+            # Close sell open positions
+            positions_to_cancel = [(open_position[0], open_position[1]) for open_position in sell_open_positions]
+            logger.info(f"Cancelling SELL positions using inverse rsi strategy!!! : {positions_to_cancel}")
+            cancel_orders(positions_to_cancel)
+
+def Inverse_RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None):
+    """
+    Compute RSI value and decide whether to buy/sell
+    In inverse RSI- we'll buy if upper threshold is crossed i.e prev. price < RSI_upper and current price > RSI_upper then we'll buy
+    Similarly if prev. price > RSI_lower and current price < RSI_lower, then we'll sell.
+    Continue to hold order till TP or SL is hit. To improve accuracy we'll use moving average of RSI values
+    args:
+        symbol: Symbol to trade
+        timeframe: Timeframe under consideration
+        RSI_period: RSI period
+        RSI_upper: RSI upper threshold
+        RSI_lower: RSI lower threshold
+        prev_rsi_val: Previously computed RSI value
+    return:
+        prev_rsi_val: Previously computed RSI value
+        signal
+    """
+    rsi_val = compute_rsi_value(symbol, timeframe, RSI_period)
+    if prev_rsi_val is None:
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, None
+    
+    logger.info(f"prev. rsi val: {prev_rsi_val}, current rsi val: {rsi_val}, RSI upper: {RSI_upper}, RSI lower: {RSI_lower}")
+
+    # Determine the trading signal based on the RSI value
+    if prev_rsi_val < RSI_upper and rsi_val > RSI_upper:
+        logger.info(f"Sending buy order since prev rsi val: {prev_rsi_val} < rsi upper: {RSI_upper} and current rsi val: {rsi_val} > rsi upper: {RSI_upper}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_BUY
+    elif prev_rsi_val > RSI_lower and rsi_val < RSI_lower:
+        logger.info(f"Sending sell order since prev rsi val: {prev_rsi_val} > rsi lower: {RSI_lower} and prev rsi val: {rsi_val} < rsi lower: {RSI_lower}")
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, mt5.ORDER_TYPE_SELL
+    else:
+        prev_rsi_val = rsi_val
+        return prev_rsi_val, None
 
 def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_val=None):
     """ 
@@ -288,15 +360,7 @@ def RSI_strategy(symbol, timeframe, RSI_period, RSI_upper, RSI_lower, prev_rsi_v
         RSI_Lower: Rsi lower value
         prev_rsi_val: Previous rsi value
     """    
-    # Get the historical data for the symbol and timeframe    
-    rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, RSI_period+1)
-
-    # Convert the rates to a pandas DataFrame
-    rates_frame = pd.DataFrame(rates)
-    
-    # Calculate the RSI indicator
-    RSI = ta.RSI(rates_frame['close'], timeperiod=RSI_period)        
-    rsi_val = RSI.values[-1]
+    rsi_val = compute_rsi_value(symbol, timeframe, RSI_period)
     if prev_rsi_val is None:
         prev_rsi_val = rsi_val
         return prev_rsi_val, None    

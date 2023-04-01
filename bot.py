@@ -1,5 +1,5 @@
-import MetaTrader5 as mt5
-from strategy import RSI_strategy_mean, ADX_RSI_strategy, DXI_strategy, Aroon_strategy, Aroon_custom_threshold_based_exit_strategy, Aroon_strategy_custom_threshold_close_orders
+from strategy import RSI_strategy_mean, Inverse_RSI_strategy,  Inverse_rsi_close_orders, ADX_RSI_strategy, DXI_strategy, Aroon_strategy, \
+                    Aroon_custom_threshold_based_exit_strategy, Aroon_strategy_custom_threshold_close_orders
 from utils import read_config, parse_config, parse_trade_timeframe
 from mt5_interface import initialize_mt5
 from order_manager import place_order, place_order_without_sltp
@@ -67,7 +67,48 @@ def rsi_strategy(trade_params, strategy_params, timeframe):
         # Wait for 1 minute before checking for another trading signal
         sleep(sleep_interval)
         logger.debug(f"Waiting for {sleep_interval}s prior to checking")
-   
+
+def inverse_rsi_strategy(trade_params, strategy_params, timeframe):
+    """ 
+    Inverse rsi trading strategy
+    args:
+        symbol: Currency to be traded
+        timeframe: Timeframe under consideration
+        strategy_params: Strategy params        
+    return: None
+    """ 
+    # Trading params   
+    symbol = trade_params['symbol']
+    lot_size = trade_params['lot_size']
+    sleep_interval = trade_params['sleep_interval']
+
+    # Strategy params
+    rsi_params = strategy_params['RSI']
+    rsi_period = rsi_params['rsi_period']
+    rsi_lower_threshold = rsi_params['rsi_lower_thresh']
+    rsi_upper_threshold = rsi_params['rsi_upper_thresh']
+
+    prev_rsi_val = None
+    # Enter the main trading loop
+    while True:
+        # Close existing open orders
+        Inverse_rsi_close_orders(symbol, timeframe, rsi_period, rsi_upper_threshold, rsi_lower_threshold)
+
+        # Check for a trading signal        
+        prev_rsi_val, signal = Inverse_RSI_strategy(symbol, timeframe, rsi_period, rsi_upper_threshold, rsi_lower_threshold, prev_rsi_val)
+                
+        logger.info(f"RSI value: {prev_rsi_val}")
+
+        # Execute the trade if there is a signal
+        if signal is not None:        
+            #place_order(symbol, signal, lot_size)
+            place_order_without_sltp(symbol, signal, lot_size)
+
+        # Wait for 1 minute before checking for another trading signal
+        sleep(sleep_interval)
+        logger.debug(f"Waiting for {sleep_interval}s prior to checking")
+
+
 def adx_rsi_strategy(trade_params, strategy_params, timeframe):
     """
     ADX RSI strategy
@@ -205,7 +246,10 @@ def main(strategy_name, timeframe, trade_params, strategy_params):
     try:    
         if strategy_name == 'RSI':
             logger.info(f"Running RSI trading strategy for symbol: {symbol}, timeframe: {timeframe}")
-            rsi_strategy(trade_params, timeframe)
+            rsi_strategy(trade_params, strategy_params, timeframe)
+        elif strategy_name == 'INVERSE_RSI':
+            logger.info(f"Running INVERSE_RSI trading strategy for symbol: {symbol}, timeframe: {timeframe}")
+            inverse_rsi_strategy(trade_params, strategy_params, timeframe)
         elif strategy_name == 'ADX_RSI_DI':
             logger.info(f"Running ADX_RSI_DI trading strategy for symbol: {symbol}, timeframe: {timeframe}")
             adx_rsi_strategy(trade_params, timeframe)

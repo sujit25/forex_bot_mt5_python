@@ -70,7 +70,7 @@ if __name__ == "__main__":
     RSI_upper = 70
     RSI_lower = 30
     lot_size = 0.01
-    config_data = read_config()
+    config_data = read_config('config/config_test.json')
     init_status = initialize_mt5(config_data['credentials'])
     if not init_status:
         logger.error("Initialization failed!!!")

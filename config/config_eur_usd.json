@@ -33,6 +33,11 @@
             "rsi_lower_thresh": 30,
             "rsi_upper_thresh": 70,
             "rsi_period": 14
+        },
+        "INVERSE_RSI":{
+            "rsi_upper_thresh": 60,
+            "rsi_lower_thresh": 40,
+            "rsi_period": 14
         }
     }
 }

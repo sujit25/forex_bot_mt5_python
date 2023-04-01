@@ -38,8 +38,10 @@ def cancel_orders(orders):
         orders: Orders to be cancelled
     return: None
     """
+    if orders is None or len(orders) == 0:
+        return
     for order in orders:
-        order_ticket_id, symbol = order        
+        order_ticket_id, symbol = order
         cancel_order(symbol, order_ticket_id)
 
 def cancel_order(symbol, order_number):
@@ -50,8 +52,12 @@ def cancel_order(symbol, order_number):
         order_number: Order number for which order needs to be closed
     returns: None
     """
-    logger.info(f"Cancelling order with ticket id: {order_number} for symbol: {symbol}")
-    mt5.Close(symbol, ticket=order_number)
+    try:
+        logger.info(f"Cancelling order with ticket id: {order_number} for symbol: {symbol}")
+        mt5.Close(symbol, ticket=order_number)
+    except Exception as ex:
+        logger.error(f"Failed to cancel order: {order_number} for symbol: {symbol}")
+        logger.error(ex)
 
 def get_open_positions(symbol):
     """ 
@@ -62,4 +68,4 @@ def get_open_positions(symbol):
         list: List of tuples including pair in format of symbol, order ticket id
     """
     orders = mt5.positions_get(symbol=symbol)
-    return [(order.symbol, order.ticket, order.type) for order in orders]
+    return [] if orders is None else [(order.symbol, order.ticket, order.type) for order in orders]    
