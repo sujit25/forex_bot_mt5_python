@@ -137,11 +137,11 @@ def Aroon_strategy_custom_threshold_close_orders2(symbol, timeframe, window_size
         
         if len(buy_open_positions) > 0:
             logger.info(f"Buy open positions: {buy_open_positions}")
-            # Check if ar_up_val has crossed buy exit threshold
-            if ar_up_prev > up_line_buy_exit_thresh and ar_up_val <= up_line_buy_exit_thresh:            
+            # Check if ar_down_val has crossed buy exit threshold
+            if ar_down_prev > up_line_buy_exit_thresh and ar_down_val <= up_line_buy_exit_thresh:            
                 # Close buy open positions
                 positions_to_cancel = [(open_position[0], open_position[1]) for open_position in buy_open_positions]
-                logger.info(f"AR up value: {ar_up_val} crossed up line buy exit threshold: {up_line_buy_exit_thresh}. Closing positions: {positions_to_cancel}")
+                logger.info(f"AR down value: {ar_down_val} crossed up line buy exit threshold: {up_line_buy_exit_thresh}. Closing positions: {positions_to_cancel}")
                 cancel_orders(positions_to_cancel)
                 ar_up_prev = None
         else:
@@ -151,11 +151,11 @@ def Aroon_strategy_custom_threshold_close_orders2(symbol, timeframe, window_size
         sell_open_positions = list(filter(lambda x: x[2] ==1, open_positions))
         if len(sell_open_positions) > 0:
             logger.info(f"Sell open positions: {sell_open_positions}")
-            # Check if ar_down_val has crossed sell exit threshold
-            if ar_down_prev < down_line_sell_exit_thresh and ar_down_val >= down_line_sell_exit_thresh:
+            # Check if ar_up_val has crossed sell exit threshold
+            if ar_up_prev < down_line_sell_exit_thresh and ar_up_val >= down_line_sell_exit_thresh:
                 # Close sell open positions
                 positions_to_cancel = [(open_position[0], open_position[1]) for open_position in sell_open_positions]
-                logger.info(f"AR down value: {ar_up_val} crossed down line sell exit threshold: {down_line_sell_exit_thresh}. Closing positions: {positions_to_cancel}")
+                logger.info(f"AR up value: {ar_up_val} crossed down line sell exit threshold: {down_line_sell_exit_thresh}. Closing positions: {positions_to_cancel}")
                 cancel_orders(positions_to_cancel)
                 ar_down_prev = None
         else:
