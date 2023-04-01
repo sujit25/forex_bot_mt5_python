@@ -1,5 +1,6 @@
 from strategy import RSI_strategy_mean, Inverse_RSI_strategy,  Inverse_rsi_close_orders, ADX_RSI_strategy, DXI_strategy, Aroon_strategy, \
-                    Aroon_custom_threshold_based_exit_strategy, Aroon_strategy_custom_threshold_close_orders
+                    Aroon_custom_threshold_based_exit_strategy, Aroon_strategy_custom_threshold_close_orders, \
+                    Aroon_strategy_custom_threshold_close_orders2, Aroon_custom_threshold_based_exit_strategy2
 from utils import read_config, parse_config, parse_trade_timeframe
 from mt5_interface import initialize_mt5
 from order_manager import place_order, place_order_without_sltp
@@ -83,7 +84,7 @@ def inverse_rsi_strategy(trade_params, strategy_params, timeframe):
     sleep_interval = trade_params['sleep_interval']
 
     # Strategy params
-    rsi_params = strategy_params['RSI']
+    rsi_params = strategy_params['INVERSE_RSI']
     rsi_period = rsi_params['rsi_period']
     rsi_lower_threshold = rsi_params['rsi_lower_thresh']
     rsi_upper_threshold = rsi_params['rsi_upper_thresh']
@@ -92,7 +93,7 @@ def inverse_rsi_strategy(trade_params, strategy_params, timeframe):
     # Enter the main trading loop
     while True:
         # Close existing open orders
-        Inverse_rsi_close_orders(symbol, timeframe, rsi_period, rsi_upper_threshold, rsi_lower_threshold)
+        #Inverse_rsi_close_orders(symbol, timeframe, rsi_period, rsi_upper_threshold, rsi_lower_threshold, prev_rsi_val)
 
         # Check for a trading signal        
         prev_rsi_val, signal = Inverse_RSI_strategy(symbol, timeframe, rsi_period, rsi_upper_threshold, rsi_lower_threshold, prev_rsi_val)
@@ -101,8 +102,8 @@ def inverse_rsi_strategy(trade_params, strategy_params, timeframe):
 
         # Execute the trade if there is a signal
         if signal is not None:        
-            #place_order(symbol, signal, lot_size)
-            place_order_without_sltp(symbol, signal, lot_size)
+            place_order(symbol, signal, lot_size)
+            #place_order_without_sltp(symbol, signal, lot_size)
 
         # Wait for 1 minute before checking for another trading signal
         sleep(sleep_interval)
@@ -230,6 +231,62 @@ def aroon_strategy_with_custom_threshold(trade_params, timeframe):
         sleep(sleep_interval)
         logger.debug(f"Waiting for {sleep_interval}s prior to checking again!!")
 
+
+def aroon_strategy_with_custom_threshold2(trade_params, strategy_params, timeframe):
+    """
+    Aroon strategy with custom threshold 2 - This is a custom strategy 
+    args:
+        trade_params: Trade params
+        strategy_params: Strategy params
+        timeframe: Timeframe
+    returns:
+        None        
+    """
+    # Prev ar up value
+    prev_ar_up_val = None
+    prev_ar_down_val = None
+
+    # prev ar up val close
+    prev_ar_up_val_close = None
+    prev_ar_down_val_close = None
+    symbol = trade_params['symbol']
+    lot_size = trade_params['lot_size']
+    sleep_interval = trade_params['sleep_interval']
+    strategy_name = trade_params['strategy']
+    
+    aroon_strategy_params = strategy_params[strategy_name]
+    print(f"aroon strategy params: {aroon_strategy_params}")
+
+    # Strategy params
+    up_line_buy_threshold = aroon_strategy_params['up_line_buy_threshold']
+    down_line_buy_threshold = aroon_strategy_params['down_line_buy_threshold']
+    up_line_exit_threshold = aroon_strategy_params['up_line_exit_threshold']
+    up_line_sell_threshold = aroon_strategy_params['up_line_sell_threshold']
+    down_line_sell_threshold = aroon_strategy_params['down_line_sell_threshold']
+    down_line_exit_threshold = aroon_strategy_params['down_line_exit_threshold']
+
+    while True:
+        # Check thresholds and close orders
+        prev_ar_up_val_close, prev_ar_down_val_close = Aroon_strategy_custom_threshold_close_orders2( \
+                                            symbol=symbol, timeframe=timeframe, window_size=25, \
+                                            ar_up_prev=prev_ar_up_val_close, ar_down_prev=prev_ar_down_val_close, \
+                                            up_line_buy_exit_thresh=up_line_exit_threshold, down_line_sell_exit_thresh=down_line_exit_threshold)
+
+        # Place orders using Aroon strategy
+        prev_ar_up_val, prev_ar_down_val, signal = Aroon_custom_threshold_based_exit_strategy2( \
+                                            symbol, timeframe, \
+                                            prev_ar_up_val, prev_ar_down_val, window_size=25, \
+                                            up_line_buy_thresh=up_line_buy_threshold, down_line_buy_thresh=down_line_buy_threshold, \
+                                            up_line_sell_thresh=up_line_sell_threshold, down_line_sell_thresh=down_line_sell_threshold)
+        if signal is not None:            
+            logger.info(f"Found crossover for AR up val and AR down val!!. executing signal: {signal}")
+            #place_order(symbol, signal, lot_size, SL_MARGIN=sl_margin, TP_MARGIN=tp_margin, comment='AR custom trading bot')
+            place_order_without_sltp(symbol, signal, lot_size, comment='AR custom trading bot')
+        
+        # Wait for sleep interval before checking again to generate trading signal
+        sleep(sleep_interval)
+        logger.debug(f"Waiting for {sleep_interval}s prior to checking again!!")
+
 def main(strategy_name, timeframe, trade_params, strategy_params):
     """ 
     Main function
@@ -262,6 +319,9 @@ def main(strategy_name, timeframe, trade_params, strategy_params):
         elif strategy_name == "AROON_CUSTOM_ENTRY_EXIT":
             logger.info(f"Running Arooon with custom thresholds strategy for symbol: {symbol}, timeframe: {timeframe} with custom entry and exit thresholds")
             aroon_strategy_with_custom_threshold(trade_params, timeframe)
+        elif strategy_name == "AROON_CUSTOM_ENTRY_EXIT_2":
+            logger.info(f"Running Aroon custom threshold 2 strategy for symbol: {symbol}, timeframe: {timeframe} with custom entry and exit thresholds")
+            aroon_strategy_with_custom_threshold2(trade_params, strategy_params, timeframe)
     except Exception as ex:
         logger.error(f"Got Error while runnning bot: {ex}")
         logger.error(ex, exc_info=True)

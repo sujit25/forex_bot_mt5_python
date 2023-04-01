@@ -41,7 +41,7 @@ def cancel_orders(orders):
     if orders is None or len(orders) == 0:
         return
     for order in orders:
-        order_ticket_id, symbol = order
+        symbol, order_ticket_id = order
         cancel_order(symbol, order_ticket_id)
 
 def cancel_order(symbol, order_number):

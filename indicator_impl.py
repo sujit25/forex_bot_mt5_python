@@ -51,6 +51,6 @@ def compute_rsi_value(symbol, timeframe, rsi_period, compute_rsi_mean=False):
     rsi = 100 - (100 / (1 + relative_strength))
     rsi_values = rsi.values
     if compute_rsi_mean:
-        return rsi_values[~np.isnan(rsi_values)].mean()
+        return int(rsi_values[~np.isnan(rsi_values)].mean())
     else:
-        return rsi_values[-1]
+        return int(rsi_values[-1])

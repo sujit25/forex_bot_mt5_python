@@ -6,12 +6,12 @@
         "mt5_exe_path": "C://Program Files//MetaTrader 5 EXNESS//terminal64.exe"
     },
     "trade_params":{
-        "symbol": "BTCUSD",
+        "symbol": "BTCUSDm",
         "lot_size": 0.5,
         "stop_loss_pips_margin": 30,
         "take_profit_pips_margin": 60,
         "timeframe": "1min",
-        "strategy": "INVERSE_RSI",
+        "strategy": "AROON_CUSTOM_ENTRY_EXIT_2",
         "sleep_interval": 5
     },
     "strategy_params":{
@@ -38,6 +38,14 @@
             "rsi_upper_thresh": 60,
             "rsi_lower_thresh": 40,
             "rsi_period": 14
+        },
+        "AROON_CUSTOM_ENTRY_EXIT_2":{
+            "up_line_buy_threshold": 60,
+            "down_line_buy_threshold": 40,
+            "up_line_exit_threshold": 95,
+            "up_line_sell_threshold":  40,
+            "down_line_sell_threshold": 60,
+            "down_line_exit_threshold": 5
         }
     }
 }
