@@ -136,13 +136,13 @@ def Aroon_strategy_custom_threshold_close_orders2(symbol, timeframe, window_size
         buy_open_positions = list(filter(lambda x: x[2] ==0, open_positions))        
         
         if len(buy_open_positions) > 0:
-            logger.info(f"Buy open positions: {buy_open_positions}")
+            logger.info(f"Buy open positions: {buy_open_positions}.")
             # Check if ar_down_val has crossed buy exit threshold
             # i.e it has touched 0 line
             if ar_down_prev > up_line_buy_exit_thresh and ar_down_val <= up_line_buy_exit_thresh:            
                 # Close buy open positions
                 positions_to_cancel = [(open_position[0], open_position[1]) for open_position in buy_open_positions]
-                logger.info(f"AR down value: {ar_down_val} crossed up line buy exit threshold: {up_line_buy_exit_thresh}. Closing positions: {positions_to_cancel}")
+                logger.info(f"Buy Threshold crossed!!! AR up prev value: {ar_up_prev} > up buy threshold: {up_line_buy_exit_thresh} & AR down value: {ar_up_val} < up buy threshold: {up_line_buy_exit_thresh}. hence closing positions: {positions_to_cancel}")
                 cancel_orders(positions_to_cancel)
                 ar_up_prev = None
         else:
@@ -157,7 +157,7 @@ def Aroon_strategy_custom_threshold_close_orders2(symbol, timeframe, window_size
             if ar_up_prev > down_line_sell_exit_thresh and ar_up_val <= down_line_sell_exit_thresh:
                 # Close sell open positions
                 positions_to_cancel = [(open_position[0], open_position[1]) for open_position in sell_open_positions]
-                logger.info(f"AR up value: {ar_up_val} crossed down line sell exit threshold: {down_line_sell_exit_thresh}. Closing positions: {positions_to_cancel}")
+                logger.info(f"Sell Threshold crossed!!! AR down prev. value: {ar_down_prev} > down sell threshold {down_line_sell_exit_thresh} & Ar down value: {ar_down_val} < down sell threshold: {down_line_sell_exit_thresh}. Closing positions: {positions_to_cancel}")
                 cancel_orders(positions_to_cancel)
                 ar_down_prev = None
         else:
