@@ -42,7 +42,7 @@
         "AROON_CUSTOM_ENTRY_EXIT_2":{
             "up_line_buy_threshold": 60,
             "down_line_buy_threshold": 40,
-            "up_line_exit_threshold": 95,
+            "up_line_exit_threshold": 5,
             "up_line_sell_threshold":  40,
             "down_line_sell_threshold": 60,
             "down_line_exit_threshold": 5
